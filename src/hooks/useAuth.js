@@ -6,25 +6,17 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
     authService
       .getCurrentUser()
       .then((res) => {
-        if (!mounted) return;
         setUser(res || null);
       })
       .catch(() => {
-        if (!mounted) return;
         setUser(null);
       })
       .finally(() => {
-        if (!mounted) return;
         setLoading(false);
       });
-
-    return () => {
-      mounted = false;
-    };
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -32,8 +24,8 @@ export function useAuth() {
     return result;
   }, []);
 
-  const signup = useCallback(async (email, password, displayName) => {
-    const result = await authService.register(email, password, displayName);
+  const signup = useCallback(async (email, password, name) => {
+    const result = await authService.register(email, password, name);
     return result;
   }, []);
 

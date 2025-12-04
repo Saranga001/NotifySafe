@@ -1,4 +1,4 @@
-import { Client, Account } from "appwrite";
+import { Client, Account, ID } from "appwrite";
 import { appwriteConfig } from "../config";
 
 export const client = new Client();
@@ -8,7 +8,6 @@ client
   .setProject(appwriteConfig.projectId);
 
 export const account = new Account(client);
-export { ID } from "appwrite";
 
 class AuthService {
   async register(email, password, name) {
@@ -27,13 +26,13 @@ class AuthService {
   }
 
   async logout() {
-    const promise = account.deleteSession({ current: true });
+    const promise = account.deleteSession({ sessionId: "current" });
     return promise;
   }
 
   async getCurrentUser() {
     const promise = account.get();
-    return promise;
+    return promise.then((res) => res);
   }
 
   async updateProfile(name) {

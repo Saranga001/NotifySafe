@@ -15,7 +15,7 @@ export default function Nav({ user }) {
     <header className="bg-white shadow">
       <div className="container mx-auto p-4 flex items-center justify-between">
         <div>
-          <Link to="/home" className="text-xl font-semibold">
+          <Link to="/home" className="text-xl font-bold text-blue-600">
             NotifySafe
           </Link>
           <p className="text-sm text-gray-500">
@@ -42,7 +42,7 @@ export default function Nav({ user }) {
           {user ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">
-                {user.displayName || user.email}
+                {user.name || user.email}
               </span>
               <button
                 className="px-2 py-1 bg-red-100 rounded hover:bg-red-200"
@@ -105,7 +105,7 @@ export default function Nav({ user }) {
 // {
 //   user ? (
 //     <div className="flex items-center gap-2">
-//       <span className="text-sm text-gray-600">{user.displayName}</span>
+//       <span className="text-sm text-gray-600">{user.name}</span>
 //       <button
 //         className="px-2 py-1 bg-red-100 rounded"
 //         onClick={() => {

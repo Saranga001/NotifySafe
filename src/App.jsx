@@ -8,20 +8,20 @@ import {
 import Nav from "./components/Nav";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-// import Dashboard from "./pages/DashboardFirebase";
+import Dashboard from "./pages/Dashboard";
 import Activity from "./pages/Activity";
 import TemplateEditor from "./pages/TemplateEditor";
 import Inbox from "./pages/Inbox";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth } from "./hooks/useAuth";
-import { firestoreBackend } from "./lib/appwrite-backend";
+import { ensureDefaultTemplates } from "./lib/appwrite-backend";
 
 export default function App() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    firestoreBackend.init();
-  }, []);
+    ensureDefaultTemplates();
+  });
 
   if (loading) {
     return (

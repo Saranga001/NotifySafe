@@ -40,7 +40,10 @@ export default function NotificationSimulator() {
           onChange={(e) => setUserId(e.target.value)}
           className="border px-2 py-1 rounded"
         />
-        <button className="px-3 py-1 bg-sky-100 rounded" onClick={send}>
+        <button
+          className="px-3 py-1 bg-blue-500 rounded text-white font-bold"
+          onClick={send}
+        >
           Trigger
         </button>
       </div>

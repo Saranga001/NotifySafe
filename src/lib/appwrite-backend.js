@@ -1,12 +1,12 @@
-import { Databases, Functions, ID, Query } from "appwrite";
-import { client } from "../api/authService";
+import { Databases, Functions, ID, Query, Permission, Role } from "appwrite";
+import { client, account } from "../api/authService";
 import { appwriteConfig } from "../config";
 
 const databases = new Databases(client);
 const functions = new Functions(client);
 
 const DB_ID = appwriteConfig.databaseId;
-const COL_ID = appwriteConfig.collectionId;
+const COL_ID = appwriteConfig.templatesCollectionId;
 const FUNC_ID = import.meta.env.VITE_APPWRITE_FUNCTION_ID || null;
 
 const TYPES = {
@@ -19,17 +19,18 @@ function now() {
   return new Date().toISOString();
 }
 
-async function ensureDefaultTemplates() {
+export async function ensureDefaultTemplates() {
   try {
-    const list = await databases.listDocuments(DB_ID, COL_ID, [
-      Query.equal("type", TYPES.TEMPLATE),
-      Query.limit(1),
-    ]);
+    const list = await databases.listDocuments({
+      databaseId: DB_ID,
+      collectionId: COL_ID,
+      queries: [Query.equal("type", TYPES.TEMPLATE), Query.limit(1)],
+    });
     if (list.total > 0) return;
 
     const defaultTemplates = [
       {
-        id: "t1",
+        $id: "t1",
         name: "LOGIN_SUCCESS",
         versions: [
           {
@@ -40,7 +41,7 @@ async function ensureDefaultTemplates() {
         ],
       },
       {
-        id: "t2",
+        $id: "t2",
         name: "ACCOUNT_DEBITED",
         versions: [
           {
@@ -51,7 +52,7 @@ async function ensureDefaultTemplates() {
         ],
       },
       {
-        id: "t3",
+        $id: "t3",
         name: "PASSWORD_CHANGED",
         versions: [
           {
@@ -62,12 +63,12 @@ async function ensureDefaultTemplates() {
         ],
       },
       {
-        id: "t4",
+        $id: "t4",
         name: "OTP_SENT",
         versions: [
           {
             v: 1,
-            body: "Your OTP is {{code}} (valid for 10 minutes)",
+            body: "Your OTP is {{code}} (val$id for 10 minutes)",
             createdAt: now(),
           },
         ],
@@ -75,10 +76,19 @@ async function ensureDefaultTemplates() {
     ];
 
     for (const tpl of defaultTemplates) {
-      await databases.createDocument(DB_ID, COL_ID, tpl.id, {
-        ...tpl,
-        type: TYPES.TEMPLATE,
-        createdAt: now(),
+      await databases.createDocument({
+        databaseId: DB_ID,
+        collectionId: COL_ID,
+        documentId: tpl.$id,
+        data: {
+          ...tpl,
+          versions: tpl.versions.map((obj) => JSON.stringify(obj)),
+          type: TYPES.TEMPLATE,
+        },
+        permissions: [
+          Permission.read(Role.any()),
+          Permission.write(Role.any()),
+        ],
       });
     }
   } catch (err) {
@@ -92,9 +102,12 @@ export const firestoreBackend = {
   },
 
   async getTemplates() {
-    const res = await databases.listDocuments(DB_ID, COL_ID, [
-      Query.equal("type", TYPES.TEMPLATE),
-    ]);
+    const res = await databases.listDocuments({
+      databaseId: DB_ID,
+      collectionId: COL_ID,
+      queries: [Query.equal("type", TYPES.TEMPLATE)],
+    });
+
     return (res.documents || []).map((d) => d);
   },
 
@@ -110,12 +123,16 @@ export const firestoreBackend = {
   },
 
   async getInbox(userId) {
-    const res = await databases.listDocuments(DB_ID, COL_ID, [
-      Query.equal("type", TYPES.INBOX),
-      Query.equal("userId", userId),
-      Query.orderDesc("createdAt"),
-      Query.limit(100),
-    ]);
+    const res = await databases.listDocuments({
+      databaseId: DB_ID,
+      collectionId: COL_ID,
+      queries: [
+        Query.equal("type", TYPES.INBOX),
+        Query.equal("userId", userId),
+        Query.orderDesc("createdAt"),
+        Query.limit(100),
+      ],
+    });
     return (res.documents || []).map((d) => d);
   },
 
