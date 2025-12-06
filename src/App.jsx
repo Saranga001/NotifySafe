@@ -14,14 +14,14 @@ import TemplateEditor from "./pages/TemplateEditor";
 import Inbox from "./pages/Inbox";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth } from "./hooks/useAuth";
-import { ensureDefaultTemplates } from "./lib/appwrite-backend";
+import { appwriteBackend } from "./api/appwrite-backend";
 
 export default function App() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    ensureDefaultTemplates();
-  });
+    appwriteBackend.init();
+  }, []);
 
   if (loading) {
     return (
@@ -38,7 +38,7 @@ export default function App() {
         <div className="container mx-auto p-4">
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<Home />} />
+            <Route path="/home" element={<Home user={user} />} />
             <Route path="/login" element={<Login />} />
             <Route path="/templates" element={<TemplateEditor />} />
             <Route path="/inbox" element={<Inbox />} />

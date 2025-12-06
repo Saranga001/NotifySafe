@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { firestoreBackend } from "../lib/appwrite-backend";
+import { appwriteBackend } from "../api/appwrite-backend";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Inbox() {
@@ -11,7 +11,7 @@ export default function Inbox() {
   }, [user]);
 
   const loadInbox = async () => {
-    const inbox = await firestoreBackend.getInbox(user.id);
+    const inbox = await appwriteBackend.getInbox(user.id);
     setMessages(inbox);
   };
 

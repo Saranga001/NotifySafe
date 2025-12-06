@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { firestoreBackend } from "../lib/appwrite-backend";
+import { appwriteBackend } from "../api/appwrite-backend";
 
 export default function Activity() {
   const [logs, setLogs] = useState([]);
@@ -9,7 +9,7 @@ export default function Activity() {
   }, []);
 
   const loadLogs = async () => {
-    const allLogs = await firestoreBackend.getLogs();
+    const allLogs = await appwriteBackend.getLogs();
     setLogs(allLogs);
   };
 

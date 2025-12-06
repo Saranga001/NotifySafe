@@ -1,7 +1,7 @@
 import { Client, Account, ID } from "appwrite";
 import { appwriteConfig } from "../config";
 
-export const client = new Client();
+const client = new Client();
 
 client
   .setEndpoint(appwriteConfig.endpoint)

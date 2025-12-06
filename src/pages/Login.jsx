@@ -27,6 +27,7 @@ export default function Login() {
         });
       } else {
         await login(email, password).then((res) => {
+          console.log("res", res);
           if (res.success) {
             setMessage("Login successful! Redirecting...");
             navigate("/home");

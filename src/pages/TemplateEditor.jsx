@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { firestoreBackend } from "../lib/appwrite-backend";
+import { appwriteBackend } from "../api/appwrite-backend";
 import { useAuth } from "../hooks/useAuth";
 
 export default function TemplateEditor() {
@@ -13,17 +13,17 @@ export default function TemplateEditor() {
   }, []);
 
   const loadTemplates = async () => {
-    const tpls = await firestoreBackend.getTemplates();
+    const tpls = await appwriteBackend.getTemplates();
     setTemplates(tpls);
   };
 
   const pick = (t) => {
     setSelected(t);
-    setBody(t.versions[t.versions.length - 1].body);
+    setBody(JSON.parse(t.versions[t.versions.length - 1]).body);
   };
 
   const save = async () => {
-    await firestoreBackend.saveTemplateEdit(selected.id, body, user.email);
+    await appwriteBackend.saveTemplateEdit(selected.$id, body, user.email);
     await loadTemplates();
     alert("Saved (versioned)");
   };
@@ -66,11 +66,15 @@ export default function TemplateEditor() {
               </div>
               <div className="mt-4 text-xs text-gray-500">Versions:</div>
               <ul className="mt-2 text-xs">
-                {selected.versions.map((v) => (
-                  <li key={v.v}>
-                    v{v.v} • {v.createdAt} • {v.editor || "system"}
-                  </li>
-                ))}
+                {selected.versions.map((v) => {
+                  v = JSON.parse(v);
+                  return (
+                    <li key={v.v}>
+                      v{v.v} • {new Date(v.createdAt).toString()} •{" "}
+                      {v.editor || "system"}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

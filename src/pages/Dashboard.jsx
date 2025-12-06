@@ -12,7 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { firestoreBackend } from "../lib/appwrite-backend";
+import { appwriteBackend } from "../api/appwrite-backend";
 
 const COLORS = ["#3b82f6", "#ef4444", "#10b981"];
 
@@ -29,7 +29,7 @@ export default function Dashboard() {
   }, []);
 
   const loadAnalytics = async () => {
-    const allLogs = await firestoreBackend.getLogs();
+    const allLogs = await appwriteBackend.getLogs();
     setLogs(allLogs);
 
     // Process logs for charts
