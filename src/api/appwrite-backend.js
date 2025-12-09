@@ -16,6 +16,7 @@ const templates_COL_ID = appwriteConfig.templatesCollectionId;
 const logs_COL_ID = appwriteConfig.logsCollectionId;
 const events_COL_ID = appwriteConfig.eventsCollectionId;
 const accounts_COL_ID = appwriteConfig.accountsCollectionId;
+const inbox_COL_ID = appwriteConfig.inboxCollectionId;
 const FUNC_ID = import.meta.env.VITE_APPWRITE_FUNCTION_ID || null;
 
 const TYPES = {
@@ -28,11 +29,65 @@ function now() {
   return new Date().toISOString();
 }
 
+function templateToMessageBuilder(template, data = {}) {
+  // --- Helpers ---
+  const randomOTP = () =>
+    Math.floor(100000 + Math.random() * 900000).toString();
+
+  const randomAmount = () => {
+    const amount = Math.floor(Math.random() * (9999 - 100 + 1)) + 100; // 3-4 digits
+    return `${amount}.00`;
+  };
+
+  const formatTime = (date = new Date()) => {
+    const d = date;
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const day = d.getDate();
+    const month = d.toLocaleString("default", { month: "short" });
+    const year = d.getFullYear();
+    return `${hours}:${minutes}, ${day} ${month} ${year}`;
+  };
+
+  const addMinutes = (minutes) => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + minutes);
+    return d;
+  };
+
+  // --- Replacement Handler ---
+  const handlers = {
+    user: () => data.user.email.split("@")[0] || "User1",
+    time: () => formatTime(addMinutes(2)), // +2 min buffer
+    otp: () => data.otp || randomOTP(),
+    amount: () => data.amount || randomAmount(),
+    validity: () => data.validity || 3,
+    email: () => data.user.email || "example@email.com",
+    device: () => data.device || "Unknown Device",
+    service: () => data.service || "the 'SERVICE'",
+    location: () => data.location || "'Unknown Location'",
+    date: () => data.date || formatTime(), // can be overridden
+    offer_details: () => data.offer_details || "special offer",
+    expiry: () => data.expiry || formatTime(addMinutes(60)),
+    link: () => data.link || "https://example.com/unlock",
+    account: () => data.user.acc_no.slice(-4) || "0000",
+  };
+
+  // --- Main Replace Logic ---
+  return template.replace(/{{\s*([\w_]+)\s*}}/g, (_, key) => {
+    if (handlers[key]) return handlers[key]();
+    return data[key] || ""; // fallback if key exists in data
+  });
+}
+
+function checkSuccess(threshold = 0.8) {
+  // Example: 0.8 = 80% success rate
+  const randomValue = Math.random(); // generates 0–1
+  return randomValue <= threshold; // success if <= threshold
+}
+
 async function ensureDefaultTemplates() {
   try {
-    // const user = account.getS().then((res) => res);
-    // console.log("user: ", user);
-
     const list = await databases.listDocuments({
       databaseId: DB_ID,
       collectionId: templates_COL_ID,
@@ -330,15 +385,11 @@ export const appwriteBackend = {
   },
 
   async getTemplateByName(name) {
-    console.log("Name:", name);
-
     const res = await databases.listDocuments({
       databaseId: DB_ID,
       collectionId: templates_COL_ID,
       queries: [Query.equal("name", name), Query.limit(1)],
     });
-
-    console.log("Response: ", res);
 
     return (res.documents || []).map((d) => d)[0];
   },
@@ -362,10 +413,7 @@ export const appwriteBackend = {
   },
 
   async getLogs(userId = null) {
-    const queries = [Query.equal("type", TYPES.LOG), Query.limit(200)];
-    if (userId) {
-      queries.unshift(Query.equal("userId", userId));
-    }
+    const queries = [Query.limit(200)];
     const res = await databases.listDocuments({
       databaseId: DB_ID,
       collectionId: logs_COL_ID,
@@ -374,15 +422,17 @@ export const appwriteBackend = {
     return (res.documents || []).sort((a, b) => b.$createdAt - a.$createdAt);
   },
 
-  async getInbox(userId) {
+  async getInbox(userId = null, type = null) {
+    const queries = [Query.orderDesc("$createdAt"), Query.limit(100)];
+    userId && queries.push(Query.equal("accounts", userId));
+    userId && queries.push(Query.equal("is_delivered", true));
+
+    type && queries.push(Query.equal("delivery_channel", type));
+
     const res = await databases.listDocuments({
       databaseId: DB_ID,
-      collectionId: COL_ID,
-      queries: [
-        Query.equal("userId", userId),
-        Query.orderDesc("createdAt"),
-        Query.limit(100),
-      ],
+      collectionId: inbox_COL_ID,
+      queries: [...queries],
     });
     return (res.documents || []).map((d) => d);
   },
@@ -421,8 +471,8 @@ export const appwriteBackend = {
         documentId: ID.unique(),
         data: {
           event_type: "TEMPLATE_EDIT",
-          templateId,
           metadata: JSON.stringify({
+            template: tpl.name,
             editor,
             version: nextV,
           }),
@@ -454,48 +504,127 @@ export const appwriteBackend = {
     }
   },
 
-  async triggerEvent(
-    event,
-    template,
-    {
-      user = "guest",
-      metadata = {},
-      channels = ["EMAIL", "SMS", "PUSH"],
-      actor,
-    } = {}
-  ) {
+  async triggerEvent(event, template, { user, metadata = {}, actor } = {}) {
     const payload = {
       eventType: event.event_type,
-      user,
+      userId: user.$id,
       metadata,
-      channels,
+      channels: event.intended_channel,
       actor,
     };
     try {
-      console.log("Template: ", template);
-
       const eventTemplate = JSON.parse(template.versions.at(-1)).body;
 
-      // eventTemplate.replace(/{{\s*([\w.]+)\s*}}/g, (m, k) => metadata[k] ?? "");
-      toast.success(eventTemplate, { autoClose: false });
+      const isPUSH = event.intended_channel.some((el) => el === "PUSH");
+      const isEMAIL = event.intended_channel.some((el) => el === "EMAIL");
+      const isSMS = event.intended_channel.some((el) => el === "SMS");
 
-      // Fallback: store a log and return success:false (simulated)
-      // await databases.createDocument({
-      //   databaseId: DB_ID,
-      //   collectionId: logs_COL_ID,
-      //   documentId: ID.unique(),
-      //   data: {
-      //     type: TYPES.LOG,
-      //     event_type: eventType,
-      //     account,
-      //     metadata: JSON.stringify(metadata),
-      //   },
-      // });
+      const message = templateToMessageBuilder(eventTemplate, { user });
 
-      return { success: true, channel: null };
+      if (isPUSH) {
+        toast.success(message, { autoClose: false });
+      }
+
+      let isSuccess = false;
+      let temp_DB_DATA = null;
+
+      do {
+        isSuccess = checkSuccess();
+
+        if (!temp_DB_DATA) {
+          if (isEMAIL) {
+            temp_DB_DATA = {
+              ...temp_DB_DATA,
+              email: {},
+            };
+            temp_DB_DATA.email = await databases
+              .createDocument({
+                databaseId: DB_ID,
+                collectionId: inbox_COL_ID,
+                documentId: ID.unique(),
+                data: {
+                  event_type: event.event_type,
+                  accounts: user.$id,
+                  message,
+                  delivery_channel: "EMAIL",
+                  is_delivered: isSuccess,
+                },
+              })
+              .then((res) => res);
+          }
+
+          if (isSMS) {
+            temp_DB_DATA = {
+              ...temp_DB_DATA,
+              sms: {},
+            };
+            temp_DB_DATA.sms = await databases
+              .createDocument({
+                databaseId: DB_ID,
+                collectionId: inbox_COL_ID,
+                documentId: ID.unique(),
+                data: {
+                  event_type: event.event_type,
+                  accounts: user.$id,
+                  message,
+                  delivery_channel: "SMS",
+                  is_delivered: isSuccess,
+                },
+              })
+              .then((res) => res);
+          }
+        } else {
+          if (isEMAIL) {
+            temp_DB_DATA.email = await databases
+              .updateDocument({
+                databaseId: DB_ID,
+                collectionId: inbox_COL_ID,
+                documentId: ID.unique(),
+                data: {
+                  retry_score: temp_DB_DATA.email.retry_score + 1,
+                  is_delivered: isSuccess,
+                },
+              })
+              .then((res) => res);
+          }
+          if (isSMS) {
+            temp_DB_DATA.sms = await databases
+              .updateDocument({
+                databaseId: DB_ID,
+                collectionId: inbox_COL_ID,
+                documentId: ID.unique(),
+                data: {
+                  retry_score: temp_DB_DATA.sms.retry_score + 1,
+                  is_delivered: isSuccess,
+                },
+              })
+              .then((res) => res);
+          }
+        }
+      } while (!isSuccess);
+
+      await databases.createDocument({
+        databaseId: DB_ID,
+        collectionId: logs_COL_ID,
+        documentId: ID.unique(),
+        data: {
+          event_type: event.event_type,
+          accounts: user.$id,
+          metadata: JSON.stringify({
+            message,
+            intended_channel: event.intended_channel,
+            retry_score: {
+              sms_retry: temp_DB_DATA?.sms?.retry_score,
+              email_retry: temp_DB_DATA?.email?.retry_score,
+            },
+          }),
+        },
+      });
+
+      return { success: true, channel: event.intended_channel };
     } catch (err) {
-      console.error("triggerEvent error:", err.message || err);
-      return { success: false, error: err.message };
+      console.error("triggerEvent error:", err);
+      return { success: false, error: err?.message };
     }
   },
 
@@ -507,7 +636,6 @@ export const appwriteBackend = {
         documentId: ID.unique(),
         data: {
           ...entry,
-          type: TYPES.LOG,
         },
       });
     } catch (err) {

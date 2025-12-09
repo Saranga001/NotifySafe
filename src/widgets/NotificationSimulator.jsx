@@ -7,6 +7,7 @@ export default function NotificationSimulator({
   setEvent = () => {},
   userAccount,
   setUserAccount = () => {},
+  triggerRefresh = () => {},
 }) {
   const { user } = useAuth();
   const [status, setStatus] = useState("");
@@ -32,30 +33,27 @@ export default function NotificationSimulator({
     } catch (error) {
       console.error("Error while fatching data: ", error);
     }
-  }, [setAccounts, setEvents]);
-
-  const getTemplate = React.useCallback(
-    () => async () => {
-      await appwriteBackend
-        .getTemplateByName(event?.event_type)
-        .then((res) => {
-          setTemplate(res);
-        })
-        .catch(() => setTemplate(null));
-    },
-    [event, event?.event_type, setEvent, template, setTemplate]
-  );
+  }, []);
 
   const send = async () => {
     setStatus("Sending...");
 
-    await getTemplate()();
+    if (!event || !userAccount) {
+      setStatus("Please select an event and an account.");
+      setTimeout(() => setStatus(""), 4000);
+      return;
+    }
 
-    console.log("Template sim: ", template);
+    const temp = await appwriteBackend
+      .getTemplateByName(event?.event_type)
+      .then((res) => res)
+      .catch(() => setTemplate(null));
 
-    if (template) {
-      const res = await appwriteBackend.triggerEvent(event, template, {
-        user: userAccount.email,
+    setTemplate(temp);
+
+    if (temp) {
+      const res = await appwriteBackend.triggerEvent(event, temp, {
+        user: userAccount,
         metadata: { amount: "$10.00", code: "123456" },
       });
       setStatus(
@@ -65,6 +63,8 @@ export default function NotificationSimulator({
       );
     }
     setTimeout(() => setStatus(""), 4000);
+
+    triggerRefresh();
   };
 
   return (

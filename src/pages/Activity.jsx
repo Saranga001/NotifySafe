@@ -23,13 +23,38 @@ export default function Activity() {
         <ul className="space-y-2">
           {logs.map((l, idx) => (
             <li key={idx} className="text-sm border-b pb-2">
-              <div className="text-xs text-gray-400">
-                {l.timestamp instanceof Object
-                  ? new Date(l.timestamp.seconds * 1000).toISOString()
-                  : l.timestamp}{" "}
-                • {l.type}
+              <div className="text-md text-gray-500">
+                {l.$createdAt instanceof Object
+                  ? new Date(l.$createdAt.seconds * 1000).toISOString()
+                  : l.$createdAt}{" "}
+                • {l.event_type}
               </div>
-              <div className="text-sm">{JSON.stringify(l, null, 2)}</div>
+              {l?.accounts && (
+                <div>
+                  Account:
+                  <pre
+                    className=""
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      wordWrap: "break-word",
+                    }}
+                  >
+                    {JSON.stringify(l?.accounts, null, 4)}
+                  </pre>
+                </div>
+              )}
+              <div className="text-sm">
+                <i>Metadata:</i>
+                <pre
+                  className=""
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    wordWrap: "break-word",
+                  }}
+                >
+                  {JSON.stringify(l?.metadata, null, 4)}
+                </pre>
+              </div>
             </li>
           ))}
         </ul>
@@ -37,24 +62,3 @@ export default function Activity() {
     </div>
   );
 }
-
-// return (
-//   <div>
-//     <h2 className="text-lg font-semibold">Activity Logs</h2>
-//     <div className="mt-3 bg-white rounded shadow p-4">
-//       {logs.length === 0 && (
-//         <div className="text-sm text-gray-500">No logs yet.</div>
-//       )}
-//       <ul className="space-y-2">
-//         {logs.map((l, idx) => (
-//           <li key={idx} className="text-sm border-b pb-2">
-//             <div className="text-xs text-gray-400">
-//               {l.timestamp} • {l.type}
-//             </div>
-//             <div className="text-sm">{JSON.stringify(l, null, 2)}</div>
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//   </div>
-// );
