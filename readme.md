@@ -191,9 +191,13 @@ NotifySafe/
 }
 ```
 
+## System Architecture Diagram
+
+<img src="./public/system-architecture-diagram.png">
+
 ## System Context Diagram
 
-<img src="./public/system-context-diagram.png">
+<img src="./public/system-context.png">
 
 ## 🚀 Getting Started
 
@@ -287,6 +291,12 @@ Use any email and password (Appwrite will create the account on first use):
    ↓
 7. Dashboard updates in real-time with new metrics
 ```
+
+## Event Workflow Diagram
+
+<img src="./public/event-workflow.png">
+
+---
 
 ### Delivery Success Rates
 
