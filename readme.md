@@ -2,6 +2,13 @@
 
 A production-ready React + Appwrite web application that demonstrates how user-triggered events flow through a multi-channel notification delivery system in real-time. This project simulates event generation, template rendering, delivery attempts across SMS, Email, and In-App channels, with fallback handling and comprehensive analytics.
 
+### Live Website: https://notifysafe.pages.dev/home
+
+### Credentials
+
+- email: `admin@notifysafe.com`
+- password: `12345678`
+
 ## 🎯 Project Overview
 
 NotifySafe is an **event-driven notification simulator** that shows the complete lifecycle of notifications:
@@ -77,13 +84,11 @@ NotifySafe is an **event-driven notification simulator** that shows the complete
 | **Frontend**        | React 18 + Vite 7.2                  | Modern, fast UI with HMR                  |
 | **Styling**         | Tailwind CSS (v4 @tailwindcss/vite)  | Utility-first CSS                         |
 | **Routing**         | React Router 6                       | Client-side navigation & protected routes |
-| **Charts**          | Recharts 2.10                        | Beautiful analytics visualizations        |
 | **Backend**         | Appwrite (Auth, Database, Functions) | Open-source backend-as-a-service          |
 | **Database**        | Appwrite Database                    | Real-time NoSQL document storage          |
 | **Cloud Functions** | Appwrite Functions (Node.js)         | Server-side notification delivery engine  |
 | **Notifications**   | React Hot Toast                      | In-app toast notifications                |
 | **Testing**         | Vitest + React Testing Library       | Unit tests with jsdom environment         |
-| **CI/CD**           | GitHub Actions                       | Automated testing & deployment            |
 
 ## 📦 Project Structure
 
@@ -186,6 +191,14 @@ NotifySafe/
 }
 ```
 
+## System Architecture Diagram
+
+<img src="./public/system-architecture-diagram.png">
+
+## System Context Diagram
+
+<img src="./public/system-context.png">
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -279,6 +292,12 @@ Use any email and password (Appwrite will create the account on first use):
 7. Dashboard updates in real-time with new metrics
 ```
 
+## Event Workflow Diagram
+
+<img src="./public/event-workflow.png">
+
+---
+
 ### Delivery Success Rates
 
 | Channel | Success Rate | Fallback      |
@@ -333,44 +352,6 @@ Use any email and password (Appwrite will create the account on first use):
 - **Appwrite Authentication**: Email/password with session management
 - **No Sensitive Data in Frontend**: Functions and backend logic handle all delivery
 - **Audit Logging**: All events logged to activity_logs for compliance
-
-## 🧪 Testing
-
-Run tests with Vitest:
-
-```bash
-# Single run
-npm run test
-
-# Watch mode
-npm run test -- --watch
-
-# UI dashboard
-npm run test:ui
-```
-
-## 📈 Deployment
-
-### Deploy to Appwrite Cloud or Self-Hosted
-
-```bash
-# Build production bundle
-npm run build
-
-# Upload dist folder to your hosting
-# (Vercel, Netlify, AWS S3, or any static host)
-# Then update VITE_APPWRITE_ENDPOINT in production .env
-```
-
-### GitHub Actions CI/CD
-
-Push to `main` branch to automatically:
-
-1. Run tests (Node 18+)
-2. Build production bundle
-3. Deploy to your hosting provider (optional, requires setup)
-
-**Setup**: Configure your hosting provider's deployment secrets in GitHub Actions.
 
 ## 🌐 Environment Variables
 
